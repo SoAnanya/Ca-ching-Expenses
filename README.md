@@ -77,16 +77,6 @@ DynamoDB (NoSQL DB)
 
 ---
 
-## Screenshots
-
-| Summary | Add Expense |
-|--------|-------------|
-| ![summary](./screenshots/summary.png) | ![add](./screenshots/add.png) |
-
-_(Upload your screenshots or remove this section)_
-
----
-
 ## Future Enhancements
 
 - Show monthly/yearly expense trends
