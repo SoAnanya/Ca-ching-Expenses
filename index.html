@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Ca-ching Expenses 💸</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+      transition: background-color 0.3s, color 0.3s;
+    }
+    .dark {
+      background-color: #1f2937;
+      color: #f3f4f6;
+    }
+    .dark .card {
+      background-color: #374151;
+      color: #f3f4f6;
+    }
+    .dark #expenseTable {
+      background-color: #374151;
+    }
+    .dark #expenseTable th {
+      background-color: #4b5563;
+    }
+    .fade-in {
+      animation: fadeIn 0.5s ease-in;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .hover-scale {
+      transition: transform 0.2s;
+    }
+    .hover-scale:hover {
+      transform: scale(1.05);
+    }
+  </style>
+</head>
+<body class="bg-gray-100 dark:bg-gray-800">
+  <header class="bg-green-600 dark:bg-green-800 text-white text-center py-6">
+    <h1 class="text-4xl font-bold">Ca-ching Expenses 💸</h1>
+    <p class="mt-2 text-lg">Track your expenses with ease and style</p>
+    <button id="themeToggle" class="mt-4 bg-gray-800 dark:bg-gray-200 text-white dark:text-gray-800 px-4 py-2 rounded-full hover:bg-gray-700 dark:hover:bg-gray-300">Toggle Dark Mode</button>
+  </header>
+
+  <section id="summary" class="py-8 px-4">
+    <h2 class="text-2xl font-semibold text-center text-green-600 dark:text-green-400">📊 Expense Summary</h2>
+    <div class="flex flex-wrap gap-4 justify-center mt-4">
+      <div class="card bg-white dark:bg-gray-700 p-6 rounded-lg shadow-lg w-64 text-center hover-scale fade-in">
+        <h3 class="text-lg font-semibold">Total Spent</h3>
+        <p id="totalSpent" class="text-2xl font-bold text-green-600 dark:text-green-400">₹0</p>
+      </div>
+      <div class="card bg-white dark:bg-gray-700 p-6 rounded-lg shadow-lg w-64 text-center hover-scale fade-in">
+        <h3 class="text-lg font-semibold">Most Spent Category</h3>
+        <p id="mostSpentCategory" class="text-2xl font-bold text-green-600 dark:text-green-400">--</p>
+      </div>
+      <div class="card bg-white dark:bg-gray-700 p-6 rounded-lg shadow-lg w-64 text-center hover-scale fade-in">
+        <h3 class="text-lg font-semibold">This Week</h3>
+        <p id="weeklySpend" class="text-2xl font-bold text-green-600 dark:text-green-400">₹0</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 🎯 Donut Chart Section -->
+  <section class="bg-white dark:bg-gray-700 shadow rounded-lg p-6 mx-4 my-6">
+    <h2 class="text-xl font-semibold text-center mb-4 text-green-600 dark:text-green-400">📊 Expense Breakdown</h2>
+    <canvas id="donutChart" class="mx-auto" width="400" height="400"></canvas>
+  </section>
+
+  <section id="actions" class="py-6 text-center">
+    <button onclick="toggleForm()" class="bg-green-600 dark:bg-green-500 text-white px-6 py-3 rounded-lg hover:bg-green-700 dark:hover:bg-green-600 hover-scale">+ Add New Expense</button>
+    <select id="categoryFilter" class="ml-4 p-2 rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white">
+      <option value="All">All Categories</option>
+      <option value="Food">Food</option>
+      <option value="Travel">Travel</option>
+      <option value="Shopping">Shopping</option>
+      <option value="Other">Other</option>
+    </select>
+  </section>
+
+  <section id="expenseForm" class="hidden max-w-lg mx-auto bg-white dark:bg-gray-700 p-6 rounded-lg shadow-lg my-6 fade-in">
+    <h3 class="text-xl font-semibold text-green-600 dark:text-green-400">Add Expense</h3>
+    <input type="date" id="date" class="w-full p-3 mt-2 border rounded-lg dark:bg-gray-600 dark:border-gray-500 dark:text-white" required />
+    <select id="category" class="w-full p-3 mt-2 border rounded-lg dark:bg-gray-600 dark:border-gray-500 dark:text-white">
+      <option value="Food">Food</option>
+      <option value="Travel">Travel</option>
+      <option value="Shopping">Shopping</option>
+      <option value="Other">Other</option>
+    </select>
+    <input type="number" id="amount" placeholder="Amount (₹)" class="w-full p-3 mt-2 border rounded-lg dark:bg-gray-600 dark:border-gray-500 dark:text-white" required />
+    <input type="text" id="note" placeholder="Note" class="w-full p-3 mt-2 border rounded-lg dark:bg-gray-600 dark:border-gray-500 dark:text-white" required />
+    <button onclick="addExpense()" class="bg-green-600 dark:bg-green-500 text-white px-6 py-3 mt-4 rounded-lg hover:bg-green-700 dark:hover:bg-green-600 hover-scale">Add Expense</button>
+  </section>
+
+  <section id="expenseList" class="px-4">
+    <h2 class="text-2xl font-semibold text-center text-green-600 dark:text-green-400">📋 Recent Expenses</h2>
+    <table id="expenseTable" class="w-full max-w-4xl mx-auto mt-6 bg-white dark:bg-gray-700 rounded-lg shadow-lg">
+      <thead>
+        <tr class="bg-green-600 dark:bg-green-700 text-white">
+          <th class="p-3">Date</th>
+          <th class="p-3">Category</th>
+          <th class="p-3">Amount</th>
+          <th class="p-3">Note</th>
+          <th class="p-3">Action</th>
+        </tr>
+      </thead>
+      <tbody id="expenseBody"></tbody>
+    </table>
+  </section>
+
+  <script>
+    let expenses = JSON.parse(localStorage.getItem('expenses')) || [];
+    let donutChart;
+
+    function toggleForm() {
+      const form = document.getElementById('expenseForm');
+      form.classList.toggle('hidden');
+    }
+
+    function addExpense() {
+      const date = document.getElementById('date').value;
+      const category = document.getElementById('category').value;
+      const amount = parseFloat(document.getElementById('amount').value);
+      const note = document.getElementById('note').value;
+
+      if (!date || !category || !amount || !note) {
+        alert('Please fill all fields!');
+        return;
+      }
+
+      expenses.push({ date, category, amount, note });
+      localStorage.setItem('expenses', JSON.stringify(expenses));
+      renderExpenses();
+      updateSummary();
+      toggleForm();
+
+      document.getElementById('date').value = '';
+      document.getElementById('category').value = 'Food';
+      document.getElementById('amount').value = '';
+      document.getElementById('note').value = '';
+    }
+
+    function deleteExpense(button) {
+      const row = button.parentNode.parentNode;
+      const index = Array.from(row.parentNode.children).indexOf(row);
+      expenses.splice(index, 1);
+      localStorage.setItem('expenses', JSON.stringify(expenses));
+      renderExpenses();
+      updateSummary();
+    }
+
+    function renderExpenses() {
+      const tbody = document.getElementById('expenseBody');
+      const filter = document.getElementById('categoryFilter').value;
+      tbody.innerHTML = '';
+
+      expenses
+        .filter(expense => filter === 'All' || expense.category === filter)
+        .forEach(expense => {
+          const row = document.createElement('tr');
+          row.classList.add('fade-in');
+          row.innerHTML = `
+            <td class="p-3">${expense.date}</td>
+            <td class="p-3">${expense.category}</td>
+            <td class="p-3">₹${expense.amount}</td>
+            <td class="p-3">${expense.note}</td>
+            <td class="p-3"><button onclick="deleteExpense(this)" class="text-red-500 hover:text-red-700">Delete</button></td>
+          `;
+          tbody.appendChild(row);
+        });
+    }
+
+    function updateSummary() {
+      const totalSpent = expenses.reduce((sum, e) => sum + e.amount, 0);
+      const weeklyExpenses = expenses.filter(e => {
+        const expenseDate = new Date(e.date);
+        const today = new Date();
+        const startOfWeek = new Date(today.setDate(today.getDate() - today.getDay()));
+        return expenseDate >= startOfWeek;
+      });
+      const weeklySpent = weeklyExpenses.reduce((sum, e) => sum + e.amount, 0);
+
+      const categoryTotals = {};
+      expenses.forEach(e => {
+        categoryTotals[e.category] = (categoryTotals[e.category] || 0) + e.amount;
+      });
+      const mostSpentCategory = Object.keys(categoryTotals).reduce((a, b) => categoryTotals[a] > categoryTotals[b] ? a : b, '--');
+
+      document.getElementById('totalSpent').textContent = `₹${totalSpent.toFixed(2)}`;
+      document.getElementById('weeklySpend').textContent = `₹${weeklySpent.toFixed(2)}`;
+      document.getElementById('mostSpentCategory').textContent = mostSpentCategory;
+
+      updateDonutChart(categoryTotals);
+    }
+
+    function updateDonutChart(categoryData) {
+      const ctx = document.getElementById('donutChart').getContext('2d');
+      if (donutChart) donutChart.destroy();
+
+      donutChart = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+          labels: Object.keys(categoryData),
+          datasets: [{
+            label: 'Expense by Category',
+            data: Object.values(categoryData),
+            backgroundColor: ['#4ade80', '#60a5fa', '#facc15', '#f87171', '#a78bfa'],
+            borderWidth: 1
+          }]
+        },
+        options: {
+          responsive: true,
+          plugins: {
+            legend: { position: 'bottom' }
+          }
+        }
+      });
+    }
+
+    document.getElementById('categoryFilter').addEventListener('change', renderExpenses);
+
+    document.getElementById('themeToggle').addEventListener('click', () => {
+      document.body.classList.toggle('dark');
+      localStorage.setItem('theme', document.body.classList.contains('dark') ? 'dark' : 'light');
+    });
+
+    if (localStorage.getItem('theme') === 'dark') {
+      document.body.classList.add('dark');
+    }
+
+    renderExpenses();
+    updateSummary();
+  </script>
+</body>
+</html>
